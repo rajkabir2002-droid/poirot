@@ -14,7 +14,9 @@ let LIVE = false, me = null, roster = [], members = [];
 let comps = [], queue = [], posts = [], fame = [], decks = [], guides = [], KT = [];
 let kind = 'team', defRows = [], defEmails = [];
 
-const S = { open: ['s-open', 'Not registered'], proof: ['s-proof', 'Proof sent'], closed: ['s-closed', 'Case closed'] };
+const S = { open: ['s-open', 'Not registered'], confirm: ['s-confirm', 'Confirm your team'], proof: ['s-proof', 'Proof sent'], closed: ['s-closed', 'Case closed'] };
+// Styles for the confirmation banner live here so that this feature needs only this one file.
+document.head.insertAdjacentHTML('beforeend', '<style>.s-confirm{color:var(--brass)}.duecard.ask{border-top-color:var(--brass)}.ask-row{display:flex;gap:12px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--brass);background:var(--card)}.ask-row p{margin:0;flex:1 1 260px;min-width:0}#asks{display:flex;flex-direction:column;gap:10px}</style>');
 const INT = { serious: 'Serious', time: 'Serious if time permits', reg: 'For the sake of registering' };
 const DOM = ['Finance', 'Consulting', 'Operations', 'Supply chain', 'Analytics', 'Tech', 'Product management', 'Marketing', 'General management'];
 const WX = { any: 'Any work experience', fresher: 'Fresher', lt2: 'Under 2 years of work', '2plus': '2+ years of work' };
@@ -40,7 +42,7 @@ function demoData() {
     { id: 'lime', co: 'HUL', name: 'L.I.M.E.', about: "HUL's marketing case competition for business schools. Teams work on a live brand problem.", team: 3, due: now + 9 * H, st: 'open', n: [273, 307] },
     { id: 'wired', co: 'Flipkart', name: 'WiRED', about: "Flipkart's flagship case competition for business schools, set around a real business problem at Flipkart.", team: 3, due: now + 31 * H, st: 'proof', n: [392, 188], reg: { team: 'Team Hastings', tid: 'UNS-48213', mates: [['Ananya', true], ['Kabir', false]] } },
     { id: 'ace', co: 'Amazon', name: 'ACE Challenge', about: "Amazon's case challenge for business school students, built around customer experience and operations.", team: 3, due: now + 3 * 24 * H, st: 'closed', n: [391, 189], reg: { team: 'Team Hastings', tid: 'UNS-51177', mates: [['Ananya', true], ['Kabir', true]] } },
-    { id: 'brand', co: "L'Oréal", name: 'Brandstorm', about: "L'Oréal's global innovation competition for students. Teams pitch a new idea for the beauty industry.", team: 3, due: now + 6 * 24 * H, st: 'open', n: [155, 425] },
+    { id: 'brand', co: "L'Oréal", name: 'Brandstorm', about: "L'Oréal's global innovation competition for students. Teams pitch a new idea for the beauty industry.", team: 3, due: now + 6 * 24 * H, st: 'confirm', n: [155, 425], reg: { team: 'Team Battle', tid: 'UNS-52240', by: 'Tanvi', needConfirm: true, mates: [['Tanvi', true], ['Dev', false]] } },
     { id: 'tic', co: 'Tata', name: 'Imagination Challenge', about: "The Tata group's innovation challenge for students. You submit an idea as an individual.", team: 1, due: now + 9 * 24 * H, st: 'open', n: [118, 462] },
     { id: 'epic', co: 'TVS Credit', name: 'E.P.I.C', about: "TVS Credit's campus challenge, with separate tracks such as finance, strategy, analytics and IT.", team: 2, due: now + 13 * 24 * H, st: 'open', n: [52, 528] },
   ];
@@ -113,8 +115,8 @@ async function loadAll() {
     const mem = m.filter(y => y.competition_id == x.id), mine = mem.find(y => y.pgp_id == me.pgp), reg = mine && r.find(y => y.id == mine.registration_id);
     return {
       id: x.id, co: x.company, name: x.name, about: x.about, team: x.team_size, due: new Date(x.deadline).getTime(), url: x.unstop_url,
-      st: !reg ? 'open' : reg.status == 'approved' ? 'closed' : 'proof', n: [mem.length, Math.max(0, roster.length - mem.length)],
-      reg: reg && { id: reg.id, team: reg.team_name, tid: reg.unstop_team_id, needConfirm: !mine.confirmed, mates: mem.filter(y => y.registration_id == reg.id && y.pgp_id != me.pgp).map(y => [y.pgp_id, y.confirmed]) },
+      st: !reg ? 'open' : reg.status == 'approved' ? 'closed' : !mine.confirmed ? 'confirm' : 'proof', n: [mem.length, Math.max(0, roster.length - mem.length)],
+      reg: reg && { id: reg.id, team: reg.team_name, tid: reg.unstop_team_id, needConfirm: !mine.confirmed && reg.status != 'approved', by: (who[reg.filed_by] || {}).name || (who[reg.filed_by] || {}).pgp_id || 'A teammate', mates: mem.filter(y => y.registration_id == reg.id && y.pgp_id != me.pgp).map(y => [y.pgp_id, y.confirmed]) },
     };
   });
   queue = r.filter(x => x.status == 'pending' && by(x.competition_id)).map(x => {
@@ -157,8 +159,14 @@ const api = {
       throw new Error(mem.error.code == '23505' ? 'Someone in this team is already registered for this competition.' : mem.error.message);
     }
   },
-  async confirm(c) { if (LIVE) must(await sb.from('registration_members').update({ confirmed: true }).eq('registration_id', c.reg.id).eq('pgp_id', me.pgp)); },
-  async leave(c) { if (LIVE) must(await sb.from('registration_members').delete().eq('registration_id', c.reg.id).eq('pgp_id', me.pgp)); },
+  async confirm(c) {
+    if (!LIVE) { c.reg.needConfirm = false; c.st = 'proof'; const q = queue.find(x => x.c == c.id && x.team == c.reg.team); if (q) q.conf[0]++; return; }
+    must(await sb.from('registration_members').update({ confirmed: true }).eq('registration_id', c.reg.id).eq('pgp_id', me.pgp));
+  },
+  async leave(c) {
+    if (!LIVE) { const q = queue.find(x => x.c == c.id && x.team == c.reg.team); if (q) q.conf[1]--; delete c.reg; c.st = 'open'; return; }
+    must(await sb.from('registration_members').delete().eq('registration_id', c.reg.id).eq('pgp_id', me.pgp));
+  },
   async approve(list) {
     if (!LIVE) { list.forEach(q => { const c = by(q.c); if (q.mine) c.st = 'closed'; queue = queue.filter(x => x != q); }); return; }
     if (list.length) must(await sb.from('registrations').update({ status: 'approved', reviewed_by: me.id }).in('id', list.map(q => q.id)));
@@ -193,13 +201,16 @@ function autoApprove() { return $('auto').checked && me.admin && ready().length 
 /* ---------------------------------------------------------------- drawing */
 function render() {
   const sorted = [...comps].sort((a, b) => a.due - b.due), open = sorted.filter(c => c.due > Date.now());
-  $('due').innerHTML = open.slice(0, 3).map(c => `<button class="card duecard ${c.st == 'closed' ? 'ok' : c.st == 'proof' ? 'mid' : ''}" data-open="${c.id}">
+  let asks = $('asks'); if (!asks) { asks = document.createElement('div'); asks.id = 'asks'; const top = $('v-board').firstElementChild; top.insertBefore(asks, top.firstChild); }
+  const waiting = open.filter(c => c.st == 'confirm'); asks.hidden = !waiting.length;
+  asks.innerHTML = waiting.map(c => `<div class="ask-row"><p><b>${esc(c.reg.by || 'A teammate')} added you to ${esc(c.reg.team)}</b> for ${esc(full(c))}. Are you in this team?</p><span class="acts"><button class="btn sm" data-confirm="${c.id}">Yes, confirm</button><button class="btn sm ghost" data-leave="${c.id}">Not my team</button><button class="btn sm ghost" data-open="${c.id}">View</button></span></div>`).join('');
+  $('due').innerHTML = open.slice(0, 3).map(c => `<button class="card duecard ${c.st == 'closed' ? 'ok' : c.st == 'proof' ? 'mid' : c.st == 'confirm' ? 'ask' : ''}" data-open="${c.id}">
     <span class="label">${esc(c.co)}</span><h3>${esc(c.name)}</h3><span class="t">${left(c.due)} <small>left</small></span>${chip(c.st)}</button>`).join('')
     || '<p class="note">No open competitions right now. Crack Tank will add them here.</p>';
   $('later').hidden = open.length <= 3;
   $('list').innerHTML = open.slice(3).map(c => `<button class="row" data-open="${c.id}"><span class="n"><b>${esc(full(c))}</b><span>${c.team == 1 ? 'Individual' : 'Team of ' + c.team} · registers on Unstop</span></span>
     <span class="left">${left(c.due)} left</span>${chip(c.st)}</button>`).join('');
-  const todo = open.filter(c => c.st == 'open').length;
+  const todo = open.filter(c => c.st == 'open' || c.st == 'confirm').length;
   $('count').textContent = open.length ? (todo ? todo + ' need your action' : 'All cases closed') : '';
 
   const F = { c: $('tf').value || 'all', i: $('ti').value, s: $('ts').value || 'all', sec: $('tsec').value || 'all', wx: $('twx').value, ce: $('tce').value };
@@ -285,9 +296,9 @@ function openCase(id) {
     <label>Screenshot of the Unstop confirmation<input type="file" id="rf-file" accept="image/*" required></label>
     <button class="btn" id="rf-go">Mark as registered</button></form>`;
   else body = `<dl class="kv"><dt>Team</dt><dd>${esc(c.reg.team)}</dd><dt>Unstop ID</dt><dd style="font-family:var(--mono)">${esc(c.reg.tid)}</dd><dt>Proof</dt><dd>Screenshot attached</dd></dl>
-    ${c.reg.needConfirm ? `<div class="col g8"><p style="margin:0">A teammate added you to ${esc(c.reg.team)}. Confirm that you are in this team.</p><button class="btn" data-confirm="${c.id}">Yes, I am in this team</button><button class="btn ghost" data-leave="${c.id}">This is not my team</button></div>` : ''}
+    ${c.reg.needConfirm ? `<div class="col g8"><p style="margin:0">${esc(c.reg.by || 'A teammate')} added you to ${esc(c.reg.team)}. Confirm that you are in this team.</p><button class="btn" data-confirm="${c.id}">Yes, I am in this team</button><button class="btn ghost" data-leave="${c.id}">This is not my team</button></div>` : ''}
     ${c.reg.mates.length ? `<span class="label">Teammates</span><div class="mates">${c.reg.mates.map(m => `<div><span>${esc(m[0])}</span><span class="chip ${m[1] ? 's-closed' : 's-proof'}">${m[1] ? 'Confirmed' : 'Waiting'}</span></div>`).join('')}</div>` : ''}
-    <p class="note">${c.st == 'closed' ? 'Crack Tank has approved this registration. Nothing more to do.' : 'Waiting for Crack Tank to approve your proof. You will not be marked as a defaulter while it is pending.'}</p>`;
+    <p class="note">${c.st == 'closed' ? 'Crack Tank has approved this registration. Nothing more to do.' : c.st == 'confirm' ? 'You are counted as registered. Confirming helps Crack Tank approve the team faster.' : 'Waiting for Crack Tank to approve your proof. You will not be marked as a defaulter while it is pending.'}</p>`;
   $('sheetbody').innerHTML = `${sheetHead('Case file')}
     <h2>${esc(full(c))}</h2><div>${chip(c.st)}</div>
     <dl class="kv"><dt>Closes in</dt><dd style="font-family:var(--mono)">${left(c.due)}</dd><dt>Format</dt><dd>${c.team == 1 ? 'Individual' : 'Team of ' + c.team}</dd><dt>Platform</dt><dd>Unstop</dd><dt>Teams</dt><dd>${posts.filter(p => p.c == c.id).length} posts open in the team finder</dd></dl>
@@ -367,8 +378,8 @@ document.addEventListener('click', async e => {
   else if (d.k) { kind = d.k; seg('tfseg', t); render(); }
   else if (d.req) { const p = posts[+d.req], was = p.req; run(() => api.toggleReq(p), p.k == 'team' ? (was ? 'Request withdrawn.' : 'Request sent to ' + p.who + '.') : (was ? 'Invite withdrawn.' : 'Invite sent to ' + p.who + '.')); }
   else if (d.unpost) run(() => api.removePost(posts[+d.unpost]), 'Your post was removed.');
-  else if (d.confirm) { const c = by(d.confirm); if (await run(() => api.confirm(c), 'Confirmed. You are in ' + c.reg.team + '.')) openCase(c.id); }
-  else if (d.leave) { const c = by(d.leave); if (await run(() => api.leave(c), 'You have been taken off that team.')) openCase(c.id); }
+  else if (d.confirm) { const c = by(d.confirm); const team = c.reg.team, inSheet = !$('sheet').hidden; if (await run(() => api.confirm(c), 'Confirmed. You are in ' + team + '.') && inSheet) openCase(c.id); }
+  else if (d.leave) { const c = by(d.leave); const inSheet = !$('sheet').hidden; if (await run(() => api.leave(c), 'You have been taken off that team.') && inSheet) openCase(c.id); }
   else if (d.ok) { const q = queue[+d.ok]; run(() => api.approve([q]), q.team + ' approved.'); }
   else if (d.back) { const q = queue[+d.back]; if (t.dataset.sure) run(() => api.sendBack(q), q.team + ' asked to file the proof again.'); else { t.dataset.sure = 1; t.textContent = 'Tap again to send back'; } }
   else if (d.deck) { const k = decks[+d.deck]; if (k[6]) window.open(k[6], '_blank', 'noopener'); else toast(LIVE ? 'No file has been attached to this deck yet.' : 'In the live version, this opens ' + k[1] + '’s deck.'); }
