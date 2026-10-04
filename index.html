@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Poirot · Never miss a case</title>
+<meta name="description" content="Poirot tracks case competitions at IIM Lucknow: deadlines, proof of registration, team finder, hall of fame and playbook.">
+<meta name="theme-color" content="#0D0C0A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'%3E%3Crect width='88' height='88' fill='%230D0C0A'/%3E%3Cpath transform='translate(0 22)' fill='%23F0BE2C' d='M44 20c-6-9-17-12-25-6-6 4-9 3-14-3 0 12 8 21 19 21 8 0 15-4 20-10 5 6 12 10 20 10 11 0 19-9 19-21-5 6-8 7-14 3-8-6-19-3-25 6z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Bebas+Neue&family=Libre+Franklin:wght@400;600;700&family=Special+Elite&display=swap">
+<style>
+/* Layout: a detective's desk at night. Black masthead under venetian-blind shadow, amber marquee wordmark, typewritten labels; every case file opens as a sepia notebook page. One deliberate dark look. */
+:root{
+  color-scheme:dark;
+  --ground:#0D0C0A; --card:#181613; --card2:#221F1A; --field:#100F0D; --ink:#EDE5D0; --dim:#A99F88; --line:#2C2821;
+  --brass:#F0BE2C; --brassdim:#D9AC2A; --onbrass:#15120B;
+  --red:#E8644E; --amber:#E89B3C; --ok:#8DBB72;
+  --sign:"Bungee Inline","Impact","Arial Black",sans-serif; --display:"Bebas Neue","Impact","Arial Narrow",sans-serif; --body:"Libre Franklin","Helvetica Neue",Arial,sans-serif; --mono:"Special Elite","Courier New",monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font:16px/1.5 var(--body);margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--brassdim)}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px}
+.label{font:400 12px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.note{font:400 13px var(--mono);color:var(--dim)}
+.col{display:flex;flex-direction:column}
+.g8{gap:8px}.g12{gap:12px}.g16{gap:16px}.g28{gap:44px}
+
+header{background:radial-gradient(ellipse at 0% 0%,rgba(40,90,150,.28),transparent 50%),radial-gradient(ellipse at 100% 0%,rgba(190,30,25,.32),transparent 50%),#050505;color:var(--ink);border-bottom:1px solid var(--brass);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.top{display:flex;align-items:center;gap:12px;padding-block:14px 6px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand svg{width:44px;height:22px;fill:var(--brass);flex:none}
+.brand b{font:400 34px/1 var(--sign);letter-spacing:.06em;text-transform:uppercase;color:#FFD95A;text-shadow:0 0 6px rgba(255,200,60,.9),0 0 18px rgba(255,150,20,.75),0 0 38px rgba(255,90,10,.5)}
+.brand .col{gap:5px}
+.brand span{font:400 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.who{font:400 13px var(--mono);border:1px solid var(--line);padding:5px 10px;color:var(--ink);background:#000}
+nav{display:flex;gap:2px;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px 6px;font:400 19px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--brass);border-color:var(--brass)}
+main{padding-block:32px 48px}
+h2{font:400 34px/1.05 var(--display);letter-spacing:.06em;text-transform:uppercase;margin:0;text-wrap:balance}
+h3{font:700 17px/1.25 var(--body);margin:0}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px}
+
+.chip{display:inline-flex;align-items:center;align-self:flex-start;gap:6px;font:400 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 8px 2px;border:1px solid currentColor;white-space:nowrap}
+.chip::before{content:"";width:7px;height:7px;transform:rotate(45deg);background:currentColor;margin-bottom:2px}
+.s-open{color:var(--red)} .s-proof{color:var(--amber)} .s-closed{color:var(--ok)}
+
+.card{background:var(--card);border:1px solid var(--line)}
+.due{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.duecard{padding:20px;display:flex;flex-direction:column;gap:8px;text-align:left;border-top:4px solid var(--red)}
+.duecard.mid{border-top-color:var(--amber)} .duecard.ok{border-top-color:var(--ok)}
+.duecard .t{font:400 44px/1 var(--display);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.duecard .t small{font:400 13px var(--mono);color:var(--dim)}
+.rows>*{border-bottom:1px solid var(--line)} .rows>*:last-child{border-bottom:0}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 14px;align-items:center;padding:14px 16px;background:none;border:0;border-bottom:1px solid var(--line);text-align:left;width:100%}
+button.row:hover,.duecard:hover{background:var(--card2)}
+.row .n{min-width:0} .row .n b{display:block;font-weight:600;font-size:17px} .row .n span{color:var(--dim);font-size:14px}
+.row .left{font:400 14px var(--mono);font-variant-numeric:tabular-nums;color:var(--dim);white-space:nowrap}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:600px){.row{grid-template-columns:minmax(0,1fr) auto}.row .left,.row .acts{grid-column:1/-1}}
+
+.btn{background:var(--brass);border:1px solid var(--brass);color:var(--onbrass);font:400 18px/1.1 var(--display);letter-spacing:.1em;text-transform:uppercase;padding:9px 14px 7px}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:none;color:var(--brassdim);border-color:var(--brassdim)}
+.btn.ghost:hover{background:var(--card2);filter:none}
+.btn.sm{padding:6px 10px 4px;font-size:16px}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+select,input[type=text],input[type=datetime-local],input[type=number]{background:var(--field);border:1px solid var(--line);padding:8px 10px;width:100%}
+form{display:flex;flex-direction:column;gap:10px}
+form label{display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--dim)}
+.inline{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.inline .label{display:flex;flex-direction:column;gap:4px}
+.inline .label select,.inline .label input{font:400 15px var(--body);letter-spacing:0;text-transform:none;color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.post{padding:20px;display:flex;flex-direction:column;gap:10px}
+.post .btn{margin-top:auto}
+.fbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fbar>label{flex:1 1 220px;max-width:380px;display:flex;flex-direction:column;gap:4px}
+.fbar select,.fbar input{font:400 15px var(--body);letter-spacing:0;text-transform:none;color:var(--ink)}
+.more{padding:14px;border:1px dashed var(--line)}
+.post p{margin:0;color:var(--dim);font-size:14.5px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font:400 12.5px var(--mono);color:var(--dim);border:1px solid var(--line);padding:3px 7px 1px}
+.seg{display:flex;gap:0;flex-wrap:wrap}
+.seg button{background:var(--card);border:1px solid var(--line);padding:8px 14px 6px;font:400 18px/1.1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-right:-1px}
+.seg button[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--onbrass)}
+
+.paper{color-scheme:light;--ground:#E4D7B8;--card:#EFE5CB;--card2:#F5EDD8;--field:#F7F0DC;--ink:#1C1812;--dim:#5E5442;--line:#BBAA84;--brass:#1C1812;--brassdim:#6A4E00;--onbrass:#F1E8D0;--red:#A8321F;--amber:#875700;--ok:#2F6B3A;background:var(--ground);color:var(--ink)}
+.flip{display:block;width:100%;perspective:1100px;background:none;border:0;padding:0;height:330px;text-align:left}
+.flip .in{display:block;position:relative;width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d}
+.flip[aria-pressed="true"] .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.face.back{transform:rotateY(180deg);padding:18px;gap:10px;overflow-y:auto}
+.face>*,.cap>*,.back li>*{display:block}
+.photo{flex:1;min-height:0;background:repeating-linear-gradient(180deg,rgba(0,0,0,.55) 0 7px,transparent 7px 20px),radial-gradient(ellipse at 30% 0%,#6B5B2E 0%,#2A251B 45%,#0D0C0A 85%);display:flex!important;align-items:flex-end;justify-content:space-between;padding:10px;color:var(--dim);font:400 11.5px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.pos{background:var(--brass);color:var(--onbrass);font:400 12.5px var(--mono);padding:4px 8px 2px;letter-spacing:.08em}
+.cap{padding:12px 14px;display:flex!important;flex-direction:column;gap:2px}
+.cap small,.back small{font:400 12.5px var(--mono);letter-spacing:.06em}
+.cap small,.back small,.back li span{color:var(--dim)}
+.back ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14.5px}
+@media (prefers-reduced-motion:reduce){.flip .in{transition:none}}
+
+details{background:var(--card);border:1px solid var(--line)}
+summary{padding:13px 16px;cursor:pointer;font-weight:600;display:flex;justify-content:space-between;gap:12px;align-items:center;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:400 18px var(--mono);color:var(--brassdim)}
+details[open] summary::after{content:"–"}
+details .in{padding:0 16px 14px;color:var(--dim);font-size:15px;max-width:68ch}
+details ul{margin:0;padding-left:18px}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:640px;background:var(--card)}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:15px}
+th{font:400 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat div{padding:14px 16px}
+.stat b{display:block;font:400 44px/1 var(--display);letter-spacing:.04em;color:var(--brass)}
+
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10;display:flex;justify-content:flex-end}
+.sheet>div{border-left:1px solid #000;box-shadow:-18px 0 40px rgba(0,0,0,.6);width:min(480px,100%);height:100%;overflow-y:auto;padding:20px 18px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;background-image:repeating-linear-gradient(180deg,transparent 0 31px,rgba(28,24,18,.08) 31px 32px)}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;font-size:15px;margin:0}
+.kv dt{color:var(--dim);font:400 12px/2 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.kv dd{margin:0}
+.steps{margin:0;padding-left:20px;color:var(--dim)}
+.mates{display:flex;flex-direction:column;gap:6px}
+.mates div{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);padding:8px 10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--brass);color:var(--onbrass);font:600 14px var(--body);padding:10px 16px;z-index:20;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgba(0,0,0,.6)}
+
+/* sign-in screen */
+#login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:radial-gradient(ellipse at 0% 0%,rgba(40,90,150,.35),transparent 55%),radial-gradient(ellipse at 100% 100%,rgba(190,30,25,.38),transparent 55%),#050505}
+.gate{width:min(440px,100%);display:flex;flex-direction:column;gap:22px;align-items:center;text-align:center}
+.gate svg{width:84px;height:42px;fill:var(--brass)}
+.gate h1{margin:0;font:400 clamp(52px,16vw,84px)/1 var(--sign);letter-spacing:.06em;color:#FFD95A;text-shadow:0 0 8px rgba(255,200,60,.9),0 0 26px rgba(255,150,20,.75),0 0 60px rgba(255,90,10,.5)}
+.gate .tag2{font:400 14px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.gate .slip{width:100%;padding:22px 20px;display:flex;flex-direction:column;gap:12px;text-align:left;border:1px solid #000;box-shadow:0 18px 40px rgba(0,0,0,.6)}
+.gate .slip p{margin:0}
+.gate .btn{width:100%}
+.err{color:var(--red);font-weight:600}
+.who{max-width:60vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="login" hidden>
+  <div class="gate">
+    <svg viewBox="0 0 88 44" aria-hidden="true"><path d="M44 20c-6-9-17-12-25-6-6 4-9 3-14-3 0 12 8 21 19 21 8 0 15-4 20-10 5 6 12 10 20 10 11 0 19-9 19-21-5 6-8 7-14 3-8-6-19-3-25 6z"/></svg>
+    <h1>Poirot</h1>
+    <span class="tag2">Never miss a case</span>
+    <div class="slip paper">
+      <span class="label">IIM Lucknow · case competitions</span>
+      <p>Every open case competition, your registration status, teammates and past winners in one place.</p>
+      <button class="btn" id="signin" hidden>Sign in with Google</button>
+      <p class="note" id="nolive" hidden>Sign-in is not connected on this copy yet.</p>
+      <p class="note">Only <b>@iiml.ac.in</b> accounts can sign in.</p>
+      <p class="err" id="loginmsg" hidden></p>
+      <button class="btn ghost" id="demo">Look around the demo</button>
+    </div>
+    <span class="note">Made for Team SynapsE Overtures 2026</span>
+  </div>
+</div>
+<div id="app" hidden>
+<header><div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <svg viewBox="0 0 88 44" aria-hidden="true"><path d="M44 20c-6-9-17-12-25-6-6 4-9 3-14-3 0 12 8 21 19 21 8 0 15-4 20-10 5 6 12 10 20 10 11 0 19-9 19-21-5 6-8 7-14 3-8-6-19-3-25 6z"/></svg>
+      <div class="col"><b>Poirot</b><span>Never miss a case</span></div>
+    </div>
+    <span class="who" id="who"></span><button class="btn sm ghost" id="out">Sign out</button>
+  </div>
+  <nav role="tablist" id="nav">
+    <button role="tab" data-v="board">My cases</button>
+    <button role="tab" data-v="teams">Team finder</button>
+    <button role="tab" data-v="fame">Hall of fame</button>
+    <button role="tab" data-v="play">Playbook</button>
+    <button role="tab" data-v="desk" id="nav-desk" hidden>Crack Tank desk</button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <section id="v-board"><div class="col g28">
+    <div class="col g16">
+      <div class="head"><h2>Due soonest</h2><span class="label" id="count"></span></div>
+      <div class="due" id="due"></div>
+    </div>
+    <div class="col g16" id="later">
+      <div class="head"><h2>Coming up</h2></div>
+      <div class="card rows" id="list"></div>
+    </div>
+  </div></section>
+
+  <section id="v-teams" hidden><div class="col g16">
+    <div class="head"><h2>Team finder</h2><button class="btn sm" id="newpost">Post a need</button></div>
+    <div class="seg" id="tfseg"><button data-k="team" aria-pressed="true">Teams looking for members</button><button data-k="solo" aria-pressed="false">People looking for a team</button></div>
+    <div class="fbar"><label class="label">Competition<select id="tf"></select></label><button class="btn sm ghost" data-more="tm">More filters</button><button class="btn sm ghost" id="treset">Clear</button></div>
+    <div class="inline more" id="tm" hidden>
+      <label class="label">Commitment<select id="ti"><option value="all">Any commitment</option><option value="serious">Serious</option><option value="time">Serious if time permits</option><option value="reg">For the sake of registering</option></select></label>
+      <label class="label">Domain<select id="ts"></select></label>
+      <label class="label">Work experience<select id="twx"><option value="all">Any work experience</option><option value="fresher">Fresher</option><option value="lt2">Under 2 years</option><option value="2plus">2 years or more</option></select></label>
+      <label class="label">Case comp experience<select id="tce"><option value="all">Any case comp experience</option><option value="first">First timer</option><option value="some">Has competed before</option><option value="podium">Has a podium finish</option></select></label>
+      <label class="label">Section<select id="tsec"></select></label>
+    </div>
+    <span class="note" id="tcount"></span>
+    <form id="postform" class="card" hidden style="padding:16px">
+      <div class="inline"><label>I am<select id="pf-kind"><option value="team">A team looking for members</option><option value="solo">Looking for a team</option></select></label>
+      <label>Competition<select id="pf-comp"></select></label>
+      <label>Commitment<select id="pf-intent"><option value="serious">Serious</option><option value="time">Serious if time permits</option><option value="reg">For the sake of registering</option></select></label>
+      <label id="pf-teamwrap">Team name<input type="text" id="pf-team" maxlength="60" placeholder="Optional"></label>
+      <label id="pf-nwrap">Members needed<input type="number" id="pf-n" min="1" max="5" value="1"></label>
+      <label>Domain wanted or offered<select id="pf-dom"></select></label>
+      <label>Work experience (yours, or what the team wants)<select id="pf-wx"><option value="any">Any</option><option value="fresher">Fresher</option><option value="lt2">Under 2 years</option><option value="2plus">2 years or more</option></select></label>
+      <label>Case comp experience (yours, or what the team wants)<select id="pf-ce"><option value="any">Any</option><option value="first">First timer</option><option value="some">Has competed before</option><option value="podium">Has a podium finish</option></select></label>
+      <label>A line about you or the team<input type="text" id="pf-note" placeholder="Optional"></label></div>
+      <div style="display:flex;gap:8px"><button class="btn sm">Post</button><button type="button" class="btn sm ghost" id="pf-cancel">Cancel</button></div>
+    </form>
+    <div class="grid" id="posts"></div>
+  </div></section>
+
+  <section id="v-fame" hidden><div class="col g16">
+    <div class="head"><h2>Hall of fame</h2></div>
+    <div class="seg" id="fameseg"><button data-f="win" aria-pressed="true">Winners</button><button data-f="deck" aria-pressed="false">Winning decks</button></div>
+    <div id="f-win" class="col g12"><span class="note">Tap a card to meet the team.</span><div class="grid" id="fame"></div></div>
+    <div id="f-deck" class="col g16" hidden>
+      <div class="fbar"><label class="label">Competition<select id="dk-c"></select></label><button class="btn sm ghost" data-more="dm">More filters</button></div>
+      <div class="inline more" id="dm" hidden>
+      <label class="label">Result<select id="dk-p"><option value="all">Any result</option><option>National winner</option><option>National finalist</option><option>Campus winner</option></select></label>
+      <label class="label">Year<select id="dk-y"><option value="all">Any year</option><option>2026</option><option>2025</option><option>2024</option></select></label>
+      <label class="label">Domain<select id="dk-d"></select></label></div>
+      <span class="note" id="dk-count"></span><div id="dk-list" class="col g16"></div></div>
+  </div></section>
+
+  <section id="v-play" hidden><div class="col g16">
+    <div class="head"><h2>Use the little grey cells</h2></div>
+    <div class="seg" id="playseg"><button data-p="repo" aria-pressed="true">Repository</button><button data-p="kt" aria-pressed="false">Knowledge transfer</button></div>
+    <div id="p-repo" class="col g12">
+      <div class="fbar"><label class="label">Search<input type="text" id="g-q" placeholder="Title or keyword"></label><button class="btn sm ghost" data-more="gm">More filters</button></div>
+      <div class="inline more" id="gm" hidden>
+      <label class="label">Type<select id="g-t"><option value="all">Any type</option><option>Guide</option><option>Checklist</option><option>Template</option><option>Recording</option></select></label>
+      <label class="label">Domain<select id="g-d"></select></label></div>
+      <span class="note" id="g-count"></span>
+      <div class="col g8" id="guides"></div>
+    </div>
+    <div id="p-kt" class="col g12" hidden>
+      <div class="fbar"><label class="label">Competition<select id="kt"></select></label><button class="btn sm ghost" data-more="km">More filters</button></div>
+      <div class="inline more" id="km" hidden>
+      <label class="label">Topic<select id="kt-t"><option value="all">Any topic</option><option>Round format</option><option>What judges rewarded</option><option>Common mistakes</option><option>Seniors to ask</option></select></label>
+      <label class="label">Year<select id="kt-y"><option value="all">Any year</option><option>2026</option><option>2025</option></select></label></div>
+      <span class="note" id="kt-count"></span>
+      <div class="col g8" id="ktbody"></div>
+    </div>
+  </div></section>
+
+  <section id="v-desk" hidden><div class="col g28">
+    <div class="col g12">
+      <div class="head"><h2>Crack Tank desk</h2></div>
+      <div class="stat" id="stat"></div>
+    </div>
+    <div class="col g12">
+      <div class="head"><h3>Proofs to check</h3><button class="btn sm" id="bulk"></button></div>
+      <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="auto"> Approve automatically once every teammate has confirmed</label>
+      <div class="card rows" id="queue"></div>
+    </div>
+    <div class="col g12">
+      <div class="head"><h3>Competitions</h3><button class="btn sm" id="addc">Add a competition</button></div>
+      <form id="cform" class="card" hidden style="padding:16px">
+        <div class="inline"><label>Company<input type="text" id="cf-co" required maxlength="60"></label><label>Competition name<input type="text" id="cf-name" required maxlength="80"></label>
+        <label>Deadline<input type="datetime-local" id="cf-due" required></label><label>Team size<input type="number" id="cf-team" min="1" max="6" value="3"></label>
+        <label>Unstop link<input type="text" id="cf-link" placeholder="https://unstop.com/..."></label></div>
+        <label>Description shown to students<input type="text" id="cf-about" placeholder="Two lines on what the competition is about"></label>
+        <div style="display:flex;gap:8px"><button class="btn sm">Publish to the board</button><button type="button" class="btn sm ghost" id="cf-cancel">Cancel</button></div>
+      </form>
+      <div class="tablewrap"><table><thead><tr><th>Competition</th><th>Closes in</th><th>Registered</th><th>Not yet</th><th></th></tr></thead><tbody id="desk"></tbody></table></div>
+      
+    </div>
+    <div class="col g12">
+      <div class="head"><h3>Add to the library</h3></div>
+      <div class="acts"><button class="btn ghost" data-lib="a winner card, with the team photo and members">Add a winner</button><button class="btn ghost" data-lib="a winning deck, filed under its competition">Upload a winning deck</button><button class="btn ghost" data-lib="a guide or a competition note for the Playbook">Add a guide</button></div>
+    </div>
+  </div></section>
+</main>
+<footer class="wrap note" style="padding-block:0 28px" id="foot"></footer>
+
+<div class="sheet" id="sheet" hidden><div id="sheetbody" class="paper" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
