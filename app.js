@@ -325,7 +325,18 @@ function remind(c) {
   const inTeam = new Set(members.filter(m => m.competition_id == c.id).map(m => m.pgp_id));
   const mails = roster.filter(r => !inTeam.has(r.pgp_id)).map(r => r.pgp_id.toLowerCase() + '@' + DOMAIN);
   if (!mails.length) return toast(roster.length ? 'Everyone on the batch list has registered.' : 'The batch list is empty. Import it into the roster table first.');
-  copy(mails.join(', '), mails.length + ' email addresses copied. Paste them into the BCC line of a reminder email.');
+  // Opens a ready-to-send Gmail draft from the admin's own IIML account. The admin reads it and presses Send.
+  const when = new Date(c.due).toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
+  const subject = `Reminder: register for ${full(c)} by ${when}`;
+  const body = [`Hi,`, ``, `Poirot shows that you have not yet registered for ${full(c)}.`, `Registration closes on ${when}.`, ``,
+    `1. Register on Unstop: ${c.url || 'https://unstop.com'}`, `2. File your proof on Poirot: ${location.origin + location.pathname}`, ``,
+    `If you have already registered, please file your proof on Poirot so that you are not marked as a defaulter.`, ``, `Crack Tank`].join('\n');
+  const fits = mails.length <= 150;   // very long links are refused, so large lists are pasted instead
+  const url = 'https://mail.google.com/mail/?view=cm&fs=1' + (me.email ? '&authuser=' + encodeURIComponent(me.email) : '') +
+    (fits ? '&bcc=' + encodeURIComponent(mails.join(',')) : '') + '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  const w = window.open(url, '_blank');
+  if (fits) return toast(w ? `Draft opened with ${mails.length} students in BCC. Check it and press Send.` : 'Your browser blocked the new tab. Allow pop-ups for Poirot and try again.');
+  copy(mails.join(', '), `Draft opened. ${mails.length} addresses are too many for a link, so they are copied: paste them into BCC and press Send.`);
 }
 function askSection() {
   $('sheetbody').innerHTML = `${sheetHead('One quick thing')}<h2>Which section are you in?</h2>
