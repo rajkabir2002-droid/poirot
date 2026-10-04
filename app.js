@@ -237,6 +237,12 @@ const api = {
   async saveSection(sec) { if (LIVE) must(await sb.from('profiles').update({ section: sec }).eq('id', me.id)); me.sec = sec; },
   async proofUrl(q) { return must(await sb.storage.from('proofs').createSignedUrl(q.path, 300)).signedUrl; },
 };
+// Stops a form being sent twice while the first save is still in progress.
+async function once(form, job) {
+  if (form.dataset.busy) return; form.dataset.busy = 1;
+  const b = form.querySelector('button:not([type=button])'); if (b) b.disabled = true;
+  try { await job(); } finally { delete form.dataset.busy; if (b) b.disabled = false; }
+}
 async function run(fn, done) {
   try { await fn(); await refresh(); if (done) toast(done); return true; }
   catch (e) { console.error(e); toast(e.message || 'That did not work. Please try again.'); return false; }
@@ -270,7 +276,7 @@ function render() {
     <p>${team ? 'Section ' + esc(p.sec) + ' · ' + openTo(p) : WX[p.wx] + ' · ' + CE[p.ce]}</p>${p.note ? '<p style="color:var(--ink)">“' + esc(p.note) + '”</p>' : ''}
     ${p.mine && p.asks && p.asks.length ? '<p>' + (team ? 'Asked to join: ' : 'Invited by: ') + esc(p.asks.join(', ')) + '</p>' : ''}
     <div class="tags"><span class="tag" style="border-color:var(--brass);color:var(--brassdim)">${INT[p.i]}</span>${p.dom.map(x => `<span class="tag">${esc(x)}</span>`).join('')}</div>
-    ${p.mine ? `<button class="btn sm ghost" data-unpost="${i}">Remove my post</button>` : `<button class="btn sm ${p.req ? 'ghost' : ''}" data-req="${i}">${team ? (p.req ? 'Request sent · undo' : 'Request to join') : (p.req ? 'Invite sent · undo' : 'Invite to my team')}</button>`}</div>`;
+    ${p.mine ? `<button class="btn sm ghost" data-unpost="${i}">Remove my post</button>` : `<button class="btn sm ${p.req ? 'ghost' : ''}" data-req="${i}">${team ? (p.req ? 'Request sent · undo' : 'Request to join') : (p.req ? 'Invite sent · undo' : 'Invite to my team')}</button>${me.admin ? `<button class="btn sm ghost" style="margin-top:0" data-unpost="${i}">Remove post</button>` : ''}`}</div>`;
   }).join('') || '<p class="note">Nothing matches these filters. Clear them, or post your own need.</p>';
   more();
 
@@ -458,7 +464,11 @@ document.addEventListener('click', async e => {
   else if (d.f) { seg('fameseg', t); $('f-win').hidden = d.f != 'win'; $('f-deck').hidden = d.f != 'deck'; }
   else if (d.k) { kind = d.k; seg('tfseg', t); render(); }
   else if (d.req) { const p = posts[+d.req], was = p.req; run(() => api.toggleReq(p), p.k == 'team' ? (was ? 'Request withdrawn.' : 'Request sent to ' + p.who + '.') : (was ? 'Invite withdrawn.' : 'Invite sent to ' + p.who + '.')); }
-  else if (d.unpost) run(() => api.removePost(posts[+d.unpost]), 'Your post was removed.');
+  else if (d.unpost) {
+    const p = posts[+d.unpost];
+    if (!p.mine && !t.dataset.sure) { t.dataset.sure = 1; t.textContent = 'Tap again to remove'; return; }
+    run(() => api.removePost(p), p.mine ? 'Your post was removed.' : 'Post removed.');
+  }
   else if (d.confirm) { const c = by(d.confirm); const team = c.reg.team, inSheet = !$('sheet').hidden; if (await run(() => api.confirm(c), 'Confirmed. You are in ' + team + '.') && inSheet) openCase(c.id); }
   else if (d.leave) { const c = by(d.leave); const inSheet = !$('sheet').hidden; if (await run(() => api.leave(c), 'You have been taken off that team.') && inSheet) openCase(c.id); }
   else if (d.ok) { const q = queue[+d.ok]; run(() => api.approve([q]), q.team + ' approved.'); }
@@ -504,7 +514,8 @@ function bind() {
   $('postform').onsubmit = async e => {
     e.preventDefault(); const k = $('pf-kind').value;
     const v = { competition_id: $('pf-comp').value, kind: k, team_name: k == 'team' ? $('pf-team').value.trim() || null : null, members_needed: k == 'team' ? +$('pf-n').value || 1 : null, commitment: $('pf-intent').value, domains: [$('pf-dom').value].filter(Boolean), work_ex: $('pf-wx').value, case_exp: $('pf-ce').value, note: $('pf-note').value.trim() || null };
-    if (await run(() => api.addPost(v), 'Posted to the team finder.')) { kind = k; seg('tfseg', document.querySelector(`#tfseg [data-k="${k}"]`)); e.target.reset(); $('pf-kind').onchange(); e.target.hidden = true; render(); }
+    const form = e.target;
+    once(form, async () => { if (await run(() => api.addPost(v), 'Posted to the team finder.')) { kind = k; seg('tfseg', document.querySelector(`#tfseg [data-k="${k}"]`)); form.reset(); $('pf-kind').onchange(); form.hidden = true; render(); } });
   };
   $('addc').onclick = () => $('cform').hidden = false; $('cf-cancel').onclick = () => $('cform').hidden = true;
   $('cform').onsubmit = async e => {
@@ -512,7 +523,8 @@ function bind() {
     if (isNaN(due) || due < new Date()) return toast('Pick a deadline in the future.');
     const v = { company: $('cf-co').value.trim(), name: $('cf-name').value.trim(), about: $('cf-about').value.trim() || null, team_size: +$('cf-team').value || 1, deadline: due.toISOString(), unstop_url: $('cf-link').value.trim() || null };
     if (v.unstop_url && !/^https:\/\//i.test(v.unstop_url)) return toast('The Unstop link should start with https://');
-    if (await run(() => api.addComp(v), 'Published. It is now on every student’s board.')) { e.target.reset(); e.target.hidden = true; }
+    const form = e.target;
+    once(form, async () => { if (await run(() => api.addComp(v), 'Published. It is now on every student’s board.')) { form.reset(); form.hidden = true; } });
   };
   document.addEventListener('keydown', e => { if (e.key == 'Escape') $('sheet').hidden = true; });
   $('signin').onclick = async () => {
